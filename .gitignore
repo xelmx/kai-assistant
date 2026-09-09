@@ -1,0 +1,15 @@
+# Never commit real config, credentials, or conversation data
+openclaw.json
+*.credentials.json
+.credentials.json
+*.env
+.env
+secrets/
+sessions/
+memory/*.md
+!personas/**/memory/.gitkeep
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log

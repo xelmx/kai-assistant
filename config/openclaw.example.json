@@ -1,0 +1,134 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "~/.openclaw/workspace",
+      "model": {
+        "primary": "anthropic/claude-sonnet-5",
+        "fallbacks": ["anthropic/claude-opus-4-8"]
+      },
+      "thinkingDefault": "low"
+    },
+    "ownership": "explicit",
+    "entries": {
+      "main": {
+        "workspace": "~/.openclaw/workspace"
+      },
+      "public": {
+        "name": "Kai",
+        "workspace": "~/.openclaw/workspace-public",
+        "tools": {
+          "profile": "messaging",
+          "alsoAllow": ["web_search", "web_fetch"],
+          "deny": [
+            "exec", "process", "read", "write", "edit", "apply_patch",
+            "browser", "computer", "cron", "gateway", "nodes",
+            "agents_list", "sessions_list", "sessions_history",
+            "sessions_send", "sessions_spawn", "subagents",
+            "memory_search", "memory_get", "canvas"
+          ]
+        }
+      },
+      "meowarthur": {
+        "name": "Douglas MeowArthur",
+        "workspace": "~/.openclaw/workspace-meowarthur",
+        "identity": {
+          "name": "Douglas MeowArthur",
+          "emoji": "🐱",
+          "theme": "Bombastic, theatrical, self-important five-star-general bravado — but genuinely competent and helpful underneath it"
+        },
+        "tools": {
+          "profile": "messaging",
+          "alsoAllow": ["web_search", "web_fetch"],
+          "deny": [
+            "exec", "process", "read", "write", "edit", "apply_patch",
+            "browser", "computer", "cron", "gateway", "nodes",
+            "agents_list", "sessions_list", "sessions_history",
+            "sessions_send", "sessions_spawn", "subagents",
+            "memory_search", "memory_get", "canvas"
+          ]
+        }
+      }
+    }
+  },
+  "channels": {
+    "whatsapp": {
+      "dmPolicy": "allowlist",
+      "allowFrom": ["+1XXXXXXXXXX"],
+      "groupPolicy": "allowlist",
+      "groupAllowFrom": ["+1XXXXXXXXXX"],
+      "groups": {
+        "REPLACE_WITH_YOUR_GROUP_JID@g.us": {
+          "requireMention": false,
+          "systemPrompt": "This is our group chat. Reply to every message here from anyone - no mention needed, never NO_REPLY, never silence. Keep replies short and casual."
+        }
+      }
+    },
+    "telegram": {
+      "enabled": true,
+      "botToken": "${TELEGRAM_BOT_TOKEN}"
+    }
+  },
+  "messages": {
+    "groupChat": {
+      "mentionPatterns": ["\\bkai\\b", "\\bKai\\b"]
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    },
+    "port": 18789,
+    "bind": "loopback"
+  },
+  "tools": {
+    "profile": "coding",
+    "web": {
+      "search": { "enabled": true, "provider": "duckduckgo" }
+    },
+    "media": {
+      "audio": { "enabled": true },
+      "models": [
+        {
+          "type": "cli",
+          "command": "~/.openclaw/bin/whisper/transcribe.cmd",
+          "args": ["{{MediaPath}}"],
+          "timeoutSeconds": 180,
+          "capabilities": ["audio"]
+        }
+      ]
+    }
+  },
+  "plugins": {
+    "entries": {
+      "anthropic": { "enabled": true },
+      "whatsapp": { "enabled": true },
+      "telegram": { "enabled": true },
+      "duckduckgo": { "enabled": true },
+      "memory-core": { "config": {} }
+    },
+    "allow": ["whatsapp", "telegram", "anthropic", "duckduckgo", "memory-core"]
+  },
+  "bindings": [
+    {
+      "type": "route",
+      "agentId": "main",
+      "comment": "Owner's own DM keeps the full-power agent",
+      "match": {
+        "channel": "whatsapp",
+        "peer": { "kind": "direct", "id": "+1XXXXXXXXXX" }
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "public",
+      "comment": "Everyone else on WhatsApp (groups + allowed DMs) gets the locked-down agent",
+      "match": { "channel": "whatsapp" }
+    },
+    {
+      "agentId": "meowarthur",
+      "match": { "channel": "telegram" }
+    }
+  ]
+}

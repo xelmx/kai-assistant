@@ -63,6 +63,10 @@ This repo is the **design**, not a working deployment — real credentials, phon
 
 See the [OpenClaw docs](https://docs.openclaw.ai) for full setup detail — this repo covers the parts that are actually mine: the persona design and the security split.
 
+## Incidents & lessons learned
+
+Running this for real surfaced a few genuine issues — including an automated upgrade migration that silently added a routing rule undermining the security split above. Writeups of what broke, how it was caught, and what changed: [INCIDENTS.md](INCIDENTS.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

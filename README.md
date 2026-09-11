@@ -41,6 +41,7 @@ Routing between agents is config, not code — a list of `{agent, match: {channe
 
 - [OpenClaw](https://docs.openclaw.ai) — self-hosted multi-channel gateway (WhatsApp, Telegram, and ~15 other channels supported out of the box)
 - Claude (Sonnet, with Opus as an automatic fallback) as the model backend
+- Cursor Agent CLI (`cursor-cli/auto`) as a cross-provider fallback when Claude is down / rate-limited / returns empty replies — via [`@coo-quack/openclaw-cursor-cli`](https://www.npmjs.com/package/@coo-quack/openclaw-cursor-cli)
 - [whisper.cpp](https://github.com/ggml-org/whisper.cpp) for local, offline voice transcription
 - DuckDuckGo for key-free web search
 - Runs as a Windows Scheduled Task so the gateway survives reboots
@@ -60,6 +61,30 @@ This repo is the **design**, not a working deployment — real credentials, phon
 3. Copy the `personas/*/` folders into workspace directories referenced by your config, and edit `IDENTITY.md`/`AGENTS.md` to taste — these are plain markdown, not code, so this is the fastest part to make your own.
 4. `openclaw config validate`, then `openclaw daemon install` / `openclaw daemon restart`.
 5. Link each channel: `openclaw channels login --channel whatsapp` (QR scan) or `openclaw channels add --channel telegram --token <token>` (from [@BotFather](https://t.me/BotFather)).
+
+### Cursor fallback (Claude outage / empty-reply resilience)
+
+Claude primary → Claude Opus fallback still fails when the whole Anthropic subscription is down. The example config adds `cursor-cli/auto` as a second fallback so WhatsApp/Telegram keep answering on your Cursor subscription.
+
+1. Install and log in to the [Cursor Agent CLI](https://cursor.com/cli): `cursor-agent login`.
+2. Install the plugin (npm package currently ships TypeScript without compiled `dist/`, so link a checkout):
+
+```bash
+git clone https://github.com/coo-quack/openclaw-cursor-cli.git
+openclaw plugins install --link ./openclaw-cursor-cli --force --accept-capabilities
+```
+
+3. Ensure `~/.openclaw/openclaw.json` has (already present in `config/openclaw.example.json`):
+   - `agents.defaults.model.fallbacks` including `cursor-cli/auto`
+   - `agents.defaults.models["cursor-cli/auto"]` and `modelPolicy.allow` including that ref
+   - `plugins.entries.cursor-cli.enabled: true` and `cursor-cli` appended to `plugins.allow`
+4. **Windows only:** Node cannot spawn `cursor-agent.cmd` directly (`EFTYPE`). Keep `~/.openclaw/bin/cursor-agent-shim.cjs` (resolves the latest `cursor-agent` versioned `node.exe` + `index.js`). The linked plugin is patched to use `node` + that shim on Windows.
+5. Restart: `openclaw gateway restart`
+6. Probe: `openclaw agent --model cursor-cli/auto --message "ping"` — should reply. On Claude failure OpenClaw walks to `cursor-cli/auto`.
+
+Use `cursor-cli/...` (text inference) as the shared fallback — not `cursor-mcp/...` — so locked-down public personas do not suddenly get OpenClaw's full tool bridge.
+
+If the gateway Scheduled Task has a minimal PATH and cannot find tools, ensure the Cursor Agent install under `%LOCALAPPDATA%\cursor-agent` stays intact. Do not use the retired `agents.defaults.cliBackends` key on OpenClaw 2026.9+.
 
 See the [OpenClaw docs](https://docs.openclaw.ai) for full setup detail — this repo covers the parts that are actually mine: the persona design and the security split.
 
